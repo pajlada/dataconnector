@@ -1,0 +1,217 @@
+import React, { useState, useEffect } from 'react';
+import server from '../../utils/server';
+const { serverFunctions } = server;
+import { makeStyles } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
+import AddIcon from '@material-ui/icons/Add';
+import DeleteIcon from '@material-ui/icons/Delete';
+import DirectionsRun from '@material-ui/icons/DirectionsRun';
+import EditIcon from '@material-ui/icons/Edit';
+import Divider from '@material-ui/core/Divider';
+import Snackbar from '@material-ui/core/Snackbar';
+import MuiAlert from '@material-ui/lab/Alert';
+import CircularProgress from '@material-ui/core/CircularProgress';
+
+import Edit from './Edit';
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    display: 'flex',
+    '& > *': {
+      margin: theme.spacing(1),
+    },
+  },
+  button: {
+    margin: theme.spacing(1),
+    marginLeft: theme.spacing(0),
+  },
+  divider: {
+    marginBottom: theme.spacing(1),
+  }
+}));
+
+function Alert(props) {
+  return <MuiAlert elevation={6} variant="filled" {...props} />;
+}
+
+export default function Sidebar(props) {
+  const classes = useStyles();
+  const [commands, setCommands] = useState([]);
+  const [getting, setGetting] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [selectedCommand, setSelectedCommand] = useState({});
+  const [selectedIndex, setSelectedIndex] = useState(-2);
+  const [saving, setSaving] = useState(false);
+
+  // snackbar alert
+  const [alertOpen, setAlertOpen] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState(false);
+  const handleAlertClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setAlertOpen(false);
+  };
+
+  useEffect(() => {
+    setGetting(true);
+    serverFunctions.getCommands().then(function(rsp){
+      if('error' in rsp){
+        setAlertMessage(rsp.error);
+        setAlertOpen(true);
+      } else if ('response' in rsp) {
+        setCommands(rsp.response);
+      }
+      setGetting(false);
+    }).catch(function(err){
+      setAlertMessage(err);
+      setAlertOpen(true);
+      setGetting(false);
+    });    
+  }, []);
+
+  function editCommand(idx, command){
+    setEditing(true);
+    setSelectedIndex(idx);
+    setSelectedCommand({...command});
+  }
+
+  function runCommand(name) {
+    setRunning(true);
+    serverFunctions.runCommand(name).then(setRunning(false)).catch(function(err){
+      setRunning(false);
+    });
+  }
+
+  // keep this outside the Edit page so that we add their new header row automatically on save if they forget to press "+"
+  const [newHeader, setNewHeader] = useState({key: '', value: ''});
+  const saveNewHeader = () => {
+    // make sure the header isn't empty and has key and value set
+    if (newHeader && Object.keys(newHeader).length === 0 && newHeader.constructor === Object){
+      return
+    }
+    for (var key in newHeader){
+      if (newHeader[key] === null || newHeader[key] === ''){
+        return;
+      }
+    }
+
+    var sc = JSON.parse(JSON.stringify(selectedCommand));
+    sc.command.command.headers.push(newHeader);
+    setNewHeader({key: '', value: ''});
+    setSelectedCommand(sc);   
+  }
+
+  const saveCommands = (cmds) => {
+    setSaving(true);
+    setAlertOpen(false);
+    if (cmds === ""){
+      cmds = [];
+    }
+    let originalCommands = cmds.slice();
+    if (selectedIndex === -1){
+      cmds.push(selectedCommand);
+    } else {
+      cmds[selectedIndex] = selectedCommand;
+    }
+    
+    serverFunctions.saveCommands(cmds).then(function(rsp){
+      if ('error' in rsp){
+        setCommands(originalCommands);
+        setAlertMessage(rsp.error);
+        setAlertOpen(true);
+      } else if ('response' in rsp) {
+        setCommands(rsp.response);
+      }
+      setSaving(false);
+    }).catch(function(err){
+      setAlertMessage(err);
+      setAlertOpen(true);
+      setSaving(false);
+    });
+  }
+
+  function deleteCommand(idx) {
+    let cmds = commands.slice();
+    cmds.splice(idx, 1);
+    saveCommands(cmds);
+  }
+
+  return (
+    <div className={classes.root}>
+      <div className="sidebar branding-below">
+        {getting ? <CircularProgress />
+        : editing ? <Edit selectedCommand={selectedCommand} setSelectedCommand={setSelectedCommand} newHeader={newHeader} setNewHeader={setNewHeader} saveNewHeader={saveNewHeader} commands={commands} saveCommands={saveCommands} saving={saving} setEditing={setEditing} /> 
+        : commands.length === 0 ? (
+          <>
+            <h4>No saved data connections.</h4>
+            <NewCommandButton editing={editing} editCommand={editCommand} />
+          </>
+        ) : (
+          <>
+            <h4>My data connections</h4>
+            {commands.length > 0 && commands.map((command, idx) => (
+              <div key={idx} className="block">
+                {(idx > 0) &&
+                  <Divider className={classes.divider} />
+                }
+                <label><strong>{command.name}</strong></label><br />
+                <Button
+                  size="small"
+                  className={classes.button}
+                  startIcon={<DeleteIcon />}
+                  disabled={saving} onClick={() => deleteCommand(idx)}
+                >
+                  Delete
+                </Button>
+                <Button
+                  size="small"
+                  className={classes.button}
+                  startIcon={<EditIcon style={{color:'#3f8cb5'}} />}
+                  disabled={editing} onClick={() => editCommand(idx, command)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  className={classes.button}
+                  startIcon={<DirectionsRun color='primary' />}
+                  disabled={running} 
+                  onClick={() => runCommand(command.name)}
+                >
+                  Run
+                </Button>
+              </div>
+            ))}
+            <NewCommandButton editing={editing} editCommand={editCommand} />
+          </>
+        )}
+      </div>
+      <div className="sidebar bottom">
+        <Snackbar open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
+          <Alert onClose={handleAlertClose} severity="error">
+            {alertMessage}
+          </Alert>
+        </Snackbar>
+      </div>      
+    </div>
+  );
+};
+
+function NewCommandButton(props){
+  const classes = useStyles();
+  return (
+    <Button
+      variant="contained"
+      color='primary'
+      size="small"
+      className={classes.button}
+      startIcon={<AddIcon />}
+      disabled={props.editing} onClick={() => props.editCommand(-1, {"name":"my command","command":{"type":"direct","command":{"headers":[],"url":""}},"filter":{"type":"jmespath","filter":{"expression":""}}})}
+    >
+      New command
+    </Button>
+  )
+}
+
