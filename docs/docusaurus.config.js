@@ -3,7 +3,7 @@ module.exports = {
   title: 'Data Connector',
   tagline: 'Data Connector for Google Sheets',
   url: 'https://dataconnector.app/docs',
-  baseUrl: '/',
+  baseUrl: '/docs/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.png',
@@ -14,7 +14,7 @@ module.exports = {
       title: 'Data Connector',
       logo: {
         alt: 'Data Connector Logo',
-        src: 'img/logo.svg',
+        src: 'img/favicon.png',
       },
       items: [
         {
@@ -43,7 +43,7 @@ module.exports = {
           ],
         },
         {
-          title: 'Community',
+          title: 'Social',
           items: [
             {
               label: 'Twitter',
