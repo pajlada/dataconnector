@@ -11,6 +11,7 @@ import Divider from '@material-ui/core/Divider';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import BookIcon from '@material-ui/icons/Book';
 import GitHubIcon from '@material-ui/icons/GitHub';
 
 import Edit from './Edit';
@@ -190,6 +191,7 @@ export default function Sidebar(props) {
         )}
       </div>
       <div className="sidebar bottom">
+        <Button variant="contained" size="small" color='primary' className={classes.button} startIcon={<BookIcon />} href="https://dataconnector.app/docs/docs/" target="_blank" fullWidth style={{width:'95%'}}>View the docs</Button>
         <Button variant="contained" size="small" className={classes.button} startIcon={<GitHubIcon />} href="https://github.com/brentadamson/dataconnector" target="_blank" fullWidth style={{width:'95%'}}>Report an issue</Button>
         <Snackbar open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
           <Alert onClose={handleAlertClose} severity="error">
