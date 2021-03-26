@@ -266,7 +266,7 @@ function Headers(props){
       <FormLabel style={{fontSize:'12px'}}>Headers</FormLabel>
       <List dense={true}>
         {props.selectedCommand.command.command.headers && props.selectedCommand.command.command.headers.length > 0 && props.selectedCommand.command.command.headers.map((header, idx) => (
-          <HeaderListItem new={false} key={header.key} index={idx} headerKey={header.key} headerValue={header.value} handleChangeHeaderKey={handleChangeHeaderKey} handleChangeHeaderValue={handleChangeHeaderValue} deleteHeader={deleteHeader} />
+          <HeaderListItem new={false} key={idx} index={idx} headerKey={header.key} headerValue={header.value} handleChangeHeaderKey={handleChangeHeaderKey} handleChangeHeaderValue={handleChangeHeaderValue} deleteHeader={deleteHeader} />
         ))}
         <HeaderListItem new={true} key={props.newHeader.key ? props.newHeader.key : ''} index={-1} headerKey={props.newHeader.key ? props.newHeader.key : ''} headerValue={props.newHeader.value ? props.newHeader.value : ''} handleChangeHeaderKey={handleNewHeaderKey} handleChangeHeaderValue={handleNewHeaderValue} saveNewHeader={props.saveNewHeader} />
       </List>
@@ -280,8 +280,8 @@ function HeaderListItem(props){
   return (
     <>
     <ListItem style={{paddingLeft:'0px',paddingRight:'0px'}}>
-      <TextField label="Key" defaultValue={props.headerKey} onChange={(e) => props.handleChangeHeaderKey(props.index, e.target.value)} inputProps={{style: {fontSize: 12}}} InputLabelProps={{style: {fontSize: 12}}} />
-      <TextField label="Value" defaultValue={props.headerValue} onChange={(e) => props.handleChangeHeaderValue(props.index, e.target.value)} inputProps={{style: {fontSize: 12}}} InputLabelProps={{style: {fontSize: 12}}} style={{paddingLeft: '5px'}}/>
+      <TextField label="Key" defaultValue={props.headerKey} onPaste={(e) => props.handleChangeHeaderKey(props.index, e.target.value)} onChange={(e) => props.handleChangeHeaderKey(props.index, e.target.value)} inputProps={{style: {fontSize: 12}}} InputLabelProps={{style: {fontSize: 12}}} />
+      <TextField label="Value" defaultValue={props.headerValue} onPaste={(e) => props.handleChangeHeaderValue(props.index, e.target.value)} onChange={(e) => props.handleChangeHeaderValue(props.index, e.target.value)} inputProps={{style: {fontSize: 12}}} InputLabelProps={{style: {fontSize: 12}}} style={{paddingLeft: '5px'}}/>
       <ListItemIcon style={{minWidth:'24px'}}>
         {
           !props.new && <DeleteIcon fontSize={'small'} onClick={(e) => props.deleteHeader(props.index)} /> 

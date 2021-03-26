@@ -88,6 +88,9 @@ export default function Sidebar(props) {
 
   // keep this outside the Edit page so that we add their new header row automatically on save if they forget to press "+"
   const [newHeader, setNewHeader] = useState({key: '', value: ''});
+  useEffect(() => {
+    saveNewHeader();
+  }, [newHeader]);
   const saveNewHeader = () => {
     // make sure the header isn't empty and has key and value set
     if (newHeader && Object.keys(newHeader).length === 0 && newHeader.constructor === Object){
@@ -100,9 +103,12 @@ export default function Sidebar(props) {
     }
 
     var sc = JSON.parse(JSON.stringify(selectedCommand));
+    if (!sc.command.command.headers){
+      sc.command.command.headers = [];
+    }
     sc.command.command.headers.push(newHeader);
+    setSelectedCommand(sc);
     setNewHeader({key: '', value: ''});
-    setSelectedCommand(sc);   
   }
 
   const saveCommands = (cmds) => {
