@@ -10,6 +10,10 @@ module.exports = {
   organizationName: 'brentadamson', // Usually your GitHub org/user name.
   projectName: 'dataconnector', // Usually your repo name.
   themeConfig: {
+    googleAnalytics: {
+      trackingID: 'UA-161594555-1',
+      anonymizeIP: true,
+    },
     navbar: {
       title: 'Data Connector',
       logo: {
