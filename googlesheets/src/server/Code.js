@@ -102,7 +102,9 @@ function run(name, args){
         options.payload.params.push(encodeURIComponent(args[i][j])); // use encodeURIComponent as encodeURI does NOT encode commas
       }
     }
-  } else if (args) { // for strings or a single cell reference
+  } else if (!isNaN(args)){ // for numbers or a single cell reference that contains a number
+    options.payload.params.push(args.toString());
+  } else if (args) { // for strings or a single cell reference that contains a string
     options.payload.params = args.split(",");
   }
   
