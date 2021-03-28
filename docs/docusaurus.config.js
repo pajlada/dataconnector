@@ -14,6 +14,13 @@ module.exports = {
       trackingID: 'UA-161594555-1',
       anonymizeIP: true,
     },
+    metadatas: [
+      {name: 'twitter:card', content: 'summary'},
+      {name: 'twitter:site', content: '@data_connector'},
+      {name: 'twitter:title', content: 'Data Connector'},
+      {name: 'twitter:description', content: 'Connect to APIs, Websites, Databases in Google Sheets'},
+      {name: 'twitter:image', content: 'https://dataconnector.app/favicon.png'},
+    ],
     navbar: {
       title: 'Data Connector',
       logo: {
