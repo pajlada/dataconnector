@@ -14,7 +14,9 @@ Q: Why create this when there's like a bazillion Add-ons that do the same thing?
 
 A: Privacy! Add-ons in Google Sheets have a lot of power to read your Sheet. Further, connecting to various APIs and databases means we may need to store your API Keys and other information securely (unless, of course, you parameterize your queries). We want to be transparent about our methods and are always open to suggestions on how to improve the code. While other Add-ons might claim to be privacy-centric, you can never be assured until you see the code. Further, no other Add-on fulfilled our wishlist above.
 
-## :runner: To run
+More about how we stack up to our competitors can be found [on our website](https://dataconnector.app/)
+
+## :runner: How do I run this?
 
 The easiest way to run the Data Connector Add-on is to install it from the Google Workspace Marketplace: https://workspace.google.com/marketplace/app/appname/529655450076
 
