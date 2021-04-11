@@ -33,7 +33,10 @@ func (cfg *Config) UpdateGoogleKeyHandler(r *http.Request) (rsp *Response) {
 	}
 
 	// decode the JWT and make sure the signature is valid
-	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, jwt.MapClaims{}, func(*jwt.Token) (interface{}, error) {
+	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// a workaround for https://github.com/dgrijalva/jwt-go/issues/314
+		mapClaims := token.Claims.(jwt.MapClaims)
+		delete(mapClaims, "iat")
 		return []byte(cfg.JWTSecret), nil
 	})
 	if token == nil || err != nil { // this will also validate the signature and timestamp
