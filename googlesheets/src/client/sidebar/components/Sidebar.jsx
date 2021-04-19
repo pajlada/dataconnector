@@ -48,7 +48,7 @@ export default function Sidebar(props) {
 
   // snackbar alert
   const [alertOpen, setAlertOpen] = React.useState(false);
-  const [alertMessage, setAlertMessage] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState('');
   const handleAlertClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -67,7 +67,7 @@ export default function Sidebar(props) {
       }
       setGetting(false);
     }).catch(function(err){
-      setAlertMessage(err);
+      setAlertMessage('Unable to get your saved commands. Please try again.');
       setAlertOpen(true);
       setGetting(false);
     });    
@@ -83,6 +83,7 @@ export default function Sidebar(props) {
     setRunning(true);
     serverFunctions.runCommand(name).then(setRunning(false)).catch(function(err){
       setRunning(false);
+      setAlertMessage('Unable to run your command. Please try again.');
     });
   }
 
@@ -134,7 +135,7 @@ export default function Sidebar(props) {
       }
       setSaving(false);
     }).catch(function(err){
-      setAlertMessage(err);
+      setAlertMessage('Unable to save your commands. Please try again.');
       setAlertOpen(true);
       setSaving(false);
     });
