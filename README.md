@@ -39,6 +39,7 @@ The easiest way to run the Data Connector Add-on is to install it from the Googl
   export DATACONNECTOR_POSTGRESQL_HOST=localhost
   export DATACONNECTOR_POSTGRESQL_DATABASE=mydatabase
   export DATACONNECTOR_POSTGRESQL_PORT=5432
+  export DATACONNECTOR_ENCRYPTION_KEY=my-32-bit-hex-encoded-encryption-key
   export DATACONNECTOR_JWT_SECRET=secret
   ```
 
