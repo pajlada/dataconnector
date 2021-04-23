@@ -23,6 +23,6 @@ If you haven't already, install the Data Connector Add-on for Google Sheets from
 8. Enter `price` in the expression box.
 9. Click `SAVE`
 
-**Step 3: Run the command**
+**Step 2: Run the command**
 
 1. Now, you can run your command: `=run("binance")`

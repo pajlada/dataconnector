@@ -7,6 +7,7 @@ module.exports = {
         'getting-started',
         'parameters',
         'binance',
+        'coinbase',
         'stripe'
       ],
     },
