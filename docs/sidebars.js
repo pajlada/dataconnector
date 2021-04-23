@@ -6,7 +6,8 @@ module.exports = {
       items: [
         'getting-started',
         'parameters',
-        'stripe',
+        'binance',
+        'stripe'
       ],
     },
   ],
