@@ -73,6 +73,12 @@ export default function Sidebar(props) {
     });    
   }, []);
 
+  useEffect(() => {
+    if (!commands){
+      setCommands([]);
+    }
+  }, [commands]);
+
   function editCommand(idx, command){
     setEditing(true);
     setSelectedIndex(idx);
