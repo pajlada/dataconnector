@@ -5,11 +5,14 @@ slug: /pse-lookup
 
 ## How do I import Philippine Stock Exchange data to Google Sheets?
 
-PSE Lookup is a personal project and not affiliated with the Philippine Stock Exchange. The goal of the tool is to make downloading of Philippine Stock Exchange historical data readily available to the public. A project created out of frustration when searching for historical data myself.
+PSE Lookup API was created by Vrymel Omandam and describes itself as 
 
-Please counter check the data you download as I can't guarantee for its accurateness. If you ever find something erroneous, please don't hesitate to message me at vrymel@gmail.com so I can address it.
+> PSE Lookup is a personal project and not affiliated with the Philippine Stock Exchange.
+The goal of this tool is to make downloading of Philippine Stock Exchange historical data readily available to the public. A project created out of frustration when searching for historical data myself.
+> Please counter check the data you download as I can't guarantee for its accurateness. If you ever find something erroneous, please don't hesitate to message me at vrymel@gmail.com so I can address it.
+> Lastly, you agree that PSE Lookup is not liable for any losses that may result from any data you downloaded from the tool.
 
-Lastly, you agree that PSE Lookup is not liable for any losses that may result from any data you downloaded from the tool.
+Their website can be found at https://pselookup.vrymel.com/
 
 ** BEFORE YOU BEGIN **
 
