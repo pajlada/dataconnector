@@ -3,7 +3,7 @@ title: PSE Lookup API
 slug: /pse-lookup
 ---
 
-## How do I import Coinbase data to Google Sheets?
+## How do I import Philippine Stock Exchange data to Google Sheets?
 
 PSE Lookup is a personal project and not affiliated with the Philippine Stock Exchange. The goal of the tool is to make downloading of Philippine Stock Exchange historical data readily available to the public. A project created out of frustration when searching for historical data myself.
 
