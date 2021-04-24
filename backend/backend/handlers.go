@@ -111,15 +111,17 @@ func (cfg *Config) getCommands(googleKey string) (cmds commandFilterSlice, err e
 		return
 	}
 
-	var decryptedCommands []byte
-	decryptedCommands, err = cfg.Decrypt(encryptedCommands)
-	if err != nil {
-		return
-	}
+	if len(encryptedCommands) > 0 {
+		var decryptedCommands []byte
+		decryptedCommands, err = cfg.Decrypt(encryptedCommands)
+		if err != nil {
+			return
+		}
 
-	if err = json.Unmarshal(decryptedCommands, &cmds); err != nil {
-		err = errUnableToRetrieveCommands
-		return
+		if err = json.Unmarshal(decryptedCommands, &cmds); err != nil {
+			err = errUnableToRetrieveCommands
+			return
+		}
 	}
 
 	return

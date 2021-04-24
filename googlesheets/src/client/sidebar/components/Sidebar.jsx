@@ -152,7 +152,7 @@ export default function Sidebar(props) {
       <div className="sidebar branding-below">
         {getting ? <CircularProgress />
         : editing ? <Edit selectedCommand={selectedCommand} setSelectedCommand={setSelectedCommand} newHeader={newHeader} setNewHeader={setNewHeader} saveNewHeader={saveNewHeader} commands={commands} saveCommands={saveCommands} saving={saving} setEditing={setEditing} /> 
-        : commands.length === 0 ? (
+        : (!commands || commands.length === 0) ? (
           <>
             <h4>No saved data connections.</h4>
             <NewCommandButton editing={editing} editCommand={editCommand} />
