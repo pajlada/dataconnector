@@ -15,8 +15,13 @@ type PostgreSQL struct {
 	*sql.DB
 }
 
+func (p *PostgreSQL) registerUser(ctx context.Context, email string) (err error) {
+	_, err = p.DB.ExecContext(ctx, fmt.Sprintf(`INSERT INTO %s (email, registered) VALUES ($1, CURRENT_TIMESTAMP) ON CONFLICT (email) DO UPDATE set updated=CURRENT_TIMESTAMP`, userTable), email)
+	return
+}
+
 func (p *PostgreSQL) upsertUser(ctx context.Context, email, googleKey string) (err error) {
-	_, err = p.DB.ExecContext(ctx, fmt.Sprintf(`INSERT INTO %s (email, google_key) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE set google_key=$2`, userTable), email, googleKey)
+	_, err = p.DB.ExecContext(ctx, fmt.Sprintf(`INSERT INTO %s (email, google_key, registered) VALUES ($1, $2, CURRENT_TIMESTAMP) ON CONFLICT (email) DO UPDATE set google_key=$2, updated=CURRENT_TIMESTAMP`, userTable), email, googleKey)
 	return
 }
 
@@ -52,7 +57,7 @@ func (p *PostgreSQL) saveCommands(ctx context.Context, googleKey string, encrypt
 
 // Setup creates our tables
 func (p *PostgreSQL) Setup() (err error) {
-	stmt := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (pk serial PRIMARY KEY, email TEXT NOT NULL, google_key TEXT, commands BYTEA, UNIQUE(email), UNIQUE(google_key))`, userTable)
+	stmt := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (pk serial PRIMARY KEY, email TEXT NOT NULL, google_key TEXT, commands BYTEA, registered TIMESTAMP WITH TIME ZONE, updated TIMESTAMP WITH TIME ZONE, UNIQUE(email), UNIQUE(google_key))`, userTable)
 	_, err = p.DB.Exec(stmt)
 	return
 }

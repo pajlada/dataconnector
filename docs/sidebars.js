@@ -6,7 +6,15 @@ module.exports = {
       items: [
         'getting-started',
         'parameters',
+        'binance',
+        'coinbase',
+        'coinmarketcap',
+        'github',
+        'google-analytics',
+        'pse-lookup',
         'stripe',
+        'yahoo-finance',
+        'youtube'
       ],
     },
   ],

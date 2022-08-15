@@ -19,9 +19,11 @@ var (
 
 // Direct is a command where each component (method, headers, etc) are separate
 type Direct struct {
-	Client HTTPClienter `json:"-"`
-	Method string       `json:"method,omitempty"`
-	Body   string       `json:"body,omitempty"`
+	Client      HTTPClienter `json:"-"`
+	Method      string       `json:"method,omitempty"`
+	Body        string       `json:"body,omitempty"`
+	Provider    string       `json:"provider,omitempty"`
+	credentials map[string]string
 	Web
 }
 
@@ -63,6 +65,14 @@ func (d *Direct) DeParameterize(params []string) (err error) {
 		return errUnhandledParams
 	}
 	return
+}
+
+// AddCredentials adds the user's OAuth2 credentials
+func (d *Direct) AddCredentials(creds map[string]string) {
+	d.credentials = make(map[string]string)
+	for key, value := range creds {
+		d.credentials[key] = value
+	}
 }
 
 // Run executes a command directly

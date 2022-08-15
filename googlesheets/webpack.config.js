@@ -48,6 +48,18 @@ const clientEntrypoints = [
     filename: 'sidebar',
     template: './src/client/sidebar/index.html',
   },
+  {
+    name: 'CLIENT - Sidebar',
+    entry: './src/client/sidebar/callback.js',
+    filename: 'callback',
+    template: './src/client/sidebar/callback.html',
+  },
+  {
+    name: 'CLIENT - Promotions',
+    entry: './src/client/promotions/index.js',
+    filename: 'promotions',
+    template: './src/client/promotions/index.html',
+  },
 ];
 
 // define certificate locations

@@ -11,14 +11,15 @@ import Divider from '@material-ui/core/Divider';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import BookIcon from '@material-ui/icons/Book';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
 import GitHubIcon from '@material-ui/icons/GitHub';
+import Typography from '@material-ui/core/Typography';
+import LoyaltyTwoToneIcon from '@material-ui/icons/LoyaltyTwoTone';
 
 import Edit from './Edit';
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: 'flex',
     '& > *': {
       margin: theme.spacing(1),
     },
@@ -29,6 +30,10 @@ const useStyles = makeStyles((theme) => ({
   },
   divider: {
     marginBottom: theme.spacing(1),
+  },
+  divider2: {
+    marginBottom: theme.spacing(2),
+    marginTop: theme.spacing(2),
   }
 }));
 
@@ -45,10 +50,11 @@ export default function Sidebar(props) {
   const [selectedCommand, setSelectedCommand] = useState({});
   const [selectedIndex, setSelectedIndex] = useState(-2);
   const [saving, setSaving] = useState(false);
+  const [showPromotions, setShowPromotions] = useState(false);
 
   // snackbar alert
   const [alertOpen, setAlertOpen] = React.useState(false);
-  const [alertMessage, setAlertMessage] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState('');
   const handleAlertClose = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -57,6 +63,7 @@ export default function Sidebar(props) {
   };
 
   useEffect(() => {
+    // get the user's commands
     setGetting(true);
     serverFunctions.getCommands().then(function(rsp){
       if('error' in rsp){
@@ -67,11 +74,26 @@ export default function Sidebar(props) {
       }
       setGetting(false);
     }).catch(function(err){
-      setAlertMessage(err);
+      setAlertMessage('Unable to get your saved commands. Please try again.');
       setAlertOpen(true);
       setGetting(false);
-    });    
+    });
+
+    // show promos button
+    serverFunctions.getPromotions().then(function(rsp){
+      if('response' in rsp && 'show' in rsp.response && rsp.response.show===true){
+        setShowPromotions(true);
+      }
+    }).catch(function(err){
+      console.log('Unable to get promotions: ' + err);
+    });
   }, []);
+
+  useEffect(() => {
+    if (!commands){
+      setCommands([]);
+    }
+  }, [commands]);
 
   function editCommand(idx, command){
     setEditing(true);
@@ -83,6 +105,7 @@ export default function Sidebar(props) {
     setRunning(true);
     serverFunctions.runCommand(name).then(setRunning(false)).catch(function(err){
       setRunning(false);
+      setAlertMessage('Unable to run your command. Please try again.');
     });
   }
 
@@ -134,7 +157,8 @@ export default function Sidebar(props) {
       }
       setSaving(false);
     }).catch(function(err){
-      setAlertMessage(err);
+      console.log(err);
+      setAlertMessage('Unable to save your commands. Please try again.');
       setAlertOpen(true);
       setSaving(false);
     });
@@ -146,65 +170,74 @@ export default function Sidebar(props) {
     saveCommands(cmds);
   }
 
+  const showPromotionsModal = () => {
+    serverFunctions.promotionsModal().then(function(rsp){}).catch(function(err){
+      console.log(err);
+    });
+  }
+
   return (
     <div className={classes.root}>
-      <div className="sidebar branding-below">
-        {getting ? <CircularProgress />
-        : editing ? <Edit selectedCommand={selectedCommand} setSelectedCommand={setSelectedCommand} newHeader={newHeader} setNewHeader={setNewHeader} saveNewHeader={saveNewHeader} commands={commands} saveCommands={saveCommands} saving={saving} setEditing={setEditing} /> 
-        : commands.length === 0 ? (
-          <>
-            <h4>No saved data connections.</h4>
-            <NewCommandButton editing={editing} editCommand={editCommand} />
-          </>
-        ) : (
-          <>
-            <h4>My data connections</h4>
-            {commands.length > 0 && commands.map((command, idx) => (
-              <div key={idx} className="block">
-                {(idx > 0) &&
-                  <Divider className={classes.divider} />
-                }
-                <label><strong>{command.name}</strong></label><br />
-                <Button
-                  size="small"
-                  className={classes.button}
-                  startIcon={<DeleteIcon />}
-                  disabled={saving} onClick={() => deleteCommand(idx)}
-                >
-                  Delete
-                </Button>
-                <Button
-                  size="small"
-                  className={classes.button}
-                  startIcon={<EditIcon style={{color:'#3f8cb5'}} />}
-                  disabled={editing} onClick={() => editCommand(idx, command)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="small"
-                  className={classes.button}
-                  startIcon={<DirectionsRun color='primary' />}
-                  disabled={running} 
-                  onClick={() => runCommand(command.name)}
-                >
-                  Run
-                </Button>
-              </div>
-            ))}
-            <NewCommandButton editing={editing} editCommand={editCommand} />
-          </>
-        )}
-      </div>
-      <div className="sidebar bottom">
-        <Button variant="contained" size="small" color='primary' className={classes.button} startIcon={<BookIcon />} href="https://dataconnector.app/docs/docs/" target="_blank" fullWidth style={{width:'95%'}}>View the docs</Button>
-        <Button variant="contained" size="small" className={classes.button} startIcon={<GitHubIcon />} href="https://github.com/brentadamson/dataconnector" target="_blank" fullWidth style={{width:'95%'}}>Report an issue</Button>
-        <Snackbar open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
-          <Alert onClose={handleAlertClose} severity="error">
-            {alertMessage}
-          </Alert>
-        </Snackbar>
-      </div>      
+      {getting ? <CircularProgress />
+      : editing ? <Edit selectedCommand={selectedCommand} setSelectedCommand={setSelectedCommand} newHeader={newHeader} setNewHeader={setNewHeader} saveNewHeader={saveNewHeader} commands={commands} saveCommands={saveCommands} saving={saving} setEditing={setEditing} setAlertMessage={setAlertMessage} />
+      : (!commands || commands.length === 0) ? (
+        <>
+          <Typography variant="h6" gutterBottom>
+          No saved data connections.
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+          The link to our documentation below has tons of examples to help get you started.
+          </Typography>
+          <NewCommandButton editing={editing} editCommand={editCommand} />
+        </>
+      ) : (
+        <>
+          <h4>My data connections</h4>
+          {commands.length > 0 && commands.map((command, idx) => (
+            <div key={idx} className="block">
+              {(idx > 0) &&
+                <Divider className={classes.divider} />
+              }
+              <label><strong>{command.name}</strong></label><br />
+              <Button
+                size="small"
+                className={classes.button}
+                startIcon={<DeleteIcon />}
+                disabled={saving} onClick={() => deleteCommand(idx)}
+              >
+                Delete
+              </Button>
+              <Button
+                size="small"
+                className={classes.button}
+                startIcon={<EditIcon style={{color:'#3f8cb5'}} />}
+                disabled={editing || saving} onClick={() => editCommand(idx, command)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="small"
+                className={classes.button}
+                startIcon={<DirectionsRun color='primary' />}
+                disabled={running || saving}
+                onClick={() => runCommand(command.name)}
+              >
+                Run
+              </Button>
+            </div>
+          ))}
+          <NewCommandButton editing={editing} editCommand={editCommand} />
+        </>
+      )}
+      <Divider className={classes.divider2} />
+      {showPromotions ? <Button variant="contained" size="medium" color='secondary' className={classes.button} startIcon={<LoyaltyTwoToneIcon />} fullWidth style={{width:'95%'}} onClick={showPromotionsModal}>Run more commands free</Button> : ''}
+      <Button variant="contained" size="medium" color='primary' className={classes.button} startIcon={<MenuBookIcon />} href="https://dataconnector.app/docs/docs/" target="_blank" fullWidth style={{width:'95%'}}>Documentation</Button>
+      <Button variant="contained" size="medium" className={classes.button} startIcon={<GitHubIcon />} href="https://github.com/brentadamson/dataconnector" target="_blank" fullWidth style={{width:'95%'}}>Request a feature</Button>
+      <Snackbar open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
+        <Alert onClose={handleAlertClose} severity="error">
+          {alertMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

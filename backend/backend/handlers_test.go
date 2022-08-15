@@ -3,14 +3,17 @@ package backend
 import (
 	"bytes"
 	"context"
-	"dataconnector/command"
-	"dataconnector/filter"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/brentadamson/dataconnector/backend/filter"
+
+	"github.com/brentadamson/dataconnector/backend/command"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -26,6 +29,13 @@ func mockDecryptor(ciphertext []byte) (plaintext []byte, err error) {
 
 type mockBackender struct{}
 
+func (m *mockBackender) registerUser(ctx context.Context, email string) (err error) {
+	switch email {
+	case "should_fail":
+		return fmt.Errorf("random database error")
+	}
+	return
+}
 func (m *mockBackender) upsertUser(ctx context.Context, email, googleKey string) (err error) {
 	switch email {
 	case "should_fail":
@@ -52,6 +62,7 @@ func (c *mockCommander) Valid() (err error) {
 func (c *mockCommander) DeParameterize(params []string) (err error) {
 	return
 }
+func (c *mockCommander) AddCredentials(credentials map[string]string) {}
 func (c *mockCommander) Run() (bdy []byte, err error) {
 	bdy = []byte(`"mock command was run"`)
 	return
@@ -65,6 +76,78 @@ func (f *mockFilterer) StripUnsafe() (err error) {
 func (f *mockFilterer) Run(bdy []byte) (out interface{}, err error) {
 	out = `"mock command was run"`
 	return
+}
+
+func TestRegisterUserHandler(t *testing.T) {
+	tests := []struct {
+		name  string
+		Key   string `json:"key"`
+		Email string `json:"email"`
+		want  *Response
+	}{
+		{
+			name:  "can register user",
+			Key:   "1234567",
+			Email: "abc@example.com",
+			want: &Response{
+				Status:   http.StatusOK,
+				Template: "json",
+			},
+		},
+		{
+			name:  "invalid key should fail",
+			Key:   "12345678",
+			Email: "abc@example.com",
+			want: &Response{
+				Status:   http.StatusOK,
+				Template: "json",
+				Error:    errUnauthorized,
+			},
+		},
+		{
+			name: "missing email should fail",
+			Key:  "1234567",
+			want: &Response{
+				Status:   http.StatusOK,
+				Template: "json",
+				Error:    errInvalidEmail,
+			},
+		},
+		{
+			name:  "db error should return an error",
+			Key:   "1234567",
+			Email: "should_fail",
+			want: &Response{
+				Status:   http.StatusOK,
+				Template: "json",
+				Error:    errUnableToRegisterUser,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Backender: &mockBackender{},
+				Key:       "1234567",
+			}
+
+			bdy, err := json.Marshal(tt)
+			if err != nil {
+				t.Fatalf("unable to marshal request body")
+			}
+
+			req, err := http.NewRequest(http.MethodPost, "/user/register", strings.NewReader(string(bdy)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got := cfg.RegisterUserHandler(req)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("got %+v, want %+v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestUpdateGoogleKeyHandler(t *testing.T) {
@@ -84,8 +167,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": "a temporary google user key",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 			},
 		},
 		{
@@ -97,8 +180,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": "a temporary google user key",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errInvalidJWT,
 			},
 		},
@@ -112,8 +195,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": "a temporary google user key",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errInvalidJWT,
 			},
 		},
@@ -126,8 +209,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": "a temporary google user key",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errInvalidJWT,
 			},
 		},
@@ -140,8 +223,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": "1234567",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errInvalidJWT,
 			},
 		},
@@ -154,8 +237,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"not_google_key": "a temporary google user key",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errInvalidJWT,
 			},
 		},
@@ -168,8 +251,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": 1,
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errInvalidJWT,
 			},
 		},
@@ -182,8 +265,8 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 				"google_key": "1234567",
 			},
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Error:    errUnableToUpdateGoogleKey,
 			},
 		},
@@ -221,6 +304,51 @@ func TestUpdateGoogleKeyHandler(t *testing.T) {
 	}
 }
 
+func TestRunSheetsHandler(t *testing.T) {
+	tests := []struct {
+		name        string
+		requestBody string
+		want        *Response
+	}{
+		{
+			name:        "can run a user's command",
+			requestBody: `{"email":"123@gmail.com","command_number":2,"command_name":"first command","params":["1","2","3"],"command":{"name":"my command","filter":{"type":"jmespath","filter":{"expression":""}},"command":{"type":"direct","command":{"method":"get","url":"https://www.example.com"}}},"key":"1234567"}`,
+			want: &Response{
+				Status:   http.StatusOK,
+				Template: "json",
+				Response: `"mock command was run"`,
+			},
+		},
+		{
+			name:        "invalid key should fail",
+			requestBody: `{"email":"123@gmail.com","command_number":2,"command_name":"first command","params":["1","2","3"],"command":{"name":"my command","filter":{"type":"jmespath","filter":{"expression":""}},"command":{"type":"direct","command":{"method":"get","url":"https://www.example.com"}}},"key":"12345678"}`,
+			want: &Response{
+				Status:   http.StatusOK,
+				Template: "json",
+				Error:    errUnauthorized,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Backender: &mockBackender{},
+				Key:       "1234567",
+			}
+
+			req, err := http.NewRequest(http.MethodPost, "/sheets_run", strings.NewReader(tt.requestBody))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got := cfg.RunSheetsHandler(req)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
 func TestRunHandler(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -229,10 +357,10 @@ func TestRunHandler(t *testing.T) {
 	}{
 		{
 			name:        "can run a user's command",
-			requestBody: `{"google_key":"123","command_name":"first command","params":["1","2","3"]}`,
+			requestBody: `{"google_key":"123","command_name":"first command","params":["1","2","3"],"credentials":{"github":"1234567"}}`,
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Response: `"mock command was run"`,
 			},
 		},
@@ -269,8 +397,8 @@ func TestGetHandler(t *testing.T) {
 			name:      "can get a user's commands",
 			googleKey: "123",
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Response: commandFilterSlice{
 					{
 						Name: "first command",
@@ -319,8 +447,8 @@ func TestSaveHandler(t *testing.T) {
 			name:        "can save a command",
 			requestBody: `"command1"`,
 			want: &Response{
-				status:   http.StatusOK,
-				template: "json",
+				Status:   http.StatusOK,
+				Template: "json",
 				Response: commandFilterSlice{
 					{
 						Name: "first command",
@@ -357,6 +485,22 @@ func TestSaveHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func (c *commandFilter) UnmarshalJSON(b []byte) error {
+	*c = commandFilter{
+		Name: "first command",
+		Command: &command.Command{
+			Type:      "mock command",
+			Commander: &mockCommander{},
+		},
+		Filter: &filter.Filter{
+			Type:     "mock filter",
+			Filterer: &mockFilterer{},
+		},
+	}
+
+	return nil
 }
 
 func (c *commandFilterSlice) UnmarshalJSON(b []byte) error {

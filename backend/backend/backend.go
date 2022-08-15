@@ -2,9 +2,10 @@ package backend
 
 import (
 	"context"
-	"dataconnector/command"
-	"dataconnector/crypto"
-	"dataconnector/filter"
+
+	"github.com/brentadamson/dataconnector/backend/command"
+	"github.com/brentadamson/dataconnector/backend/crypto"
+	"github.com/brentadamson/dataconnector/backend/filter"
 )
 
 // Config holds configuration settings for the api
@@ -13,11 +14,14 @@ type Config struct {
 	Encrypt   crypto.Encryptor
 	Decrypt   crypto.Decryptor
 	JWTSecret string
+	Key       string
+	UserFn    func(email string, commandNumber int) error
 }
 
 // Backender outlines methods to store and retrieve saved commands
 type Backender interface {
 	upsertUser(ctx context.Context, email, googleKey string) (err error)
+	registerUser(ctx context.Context, email string) (err error)
 	getCommands(ctx context.Context, googleKey string) (encryptedCommands []byte, err error)
 	saveCommands(ctx context.Context, googleKey string, encryptedCommands []byte) (err error)
 	Setup() (err error)
@@ -25,8 +29,8 @@ type Backender interface {
 
 // Response is the http response to a request
 type Response struct {
-	status      int
-	template    string
+	Status      int         `json:"-"`
+	Template    string      `json:"-"`
 	Response    interface{} `json:"response,omitempty"`
 	Error       error       `json:"-"`
 	ErrorString string      `json:"error,omitempty"`
@@ -38,9 +42,10 @@ type User struct {
 }
 
 type userCommand struct {
-	GoogleKey   string   `json:"google_key"`
-	CommandName string   `json:"command_name"`
-	Params      []string `json:"params"`
+	GoogleKey   string            `json:"google_key"`
+	CommandName string            `json:"command_name"`
+	Params      []string          `json:"params"`
+	Credentials map[string]string `json:"credentials,omitempty"`
 }
 
 type userCommands struct {

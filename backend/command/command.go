@@ -37,6 +37,7 @@ type Command struct {
 type Commander interface {
 	Valid() (err error)
 	DeParameterize(params []string) (err error)
+	AddCredentials(credentials map[string]string)
 	Run() (bdy []byte, err error)
 }
 

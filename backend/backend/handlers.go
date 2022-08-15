@@ -2,7 +2,6 @@ package backend
 
 import (
 	"context"
-	"dataconnector/crypto"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,13 +10,19 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/brentadamson/dataconnector/backend/crypto"
+	"github.com/brentadamson/log"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 )
 
 var (
+	errUnauthorized             = fmt.Errorf("unauthorized")
 	errInvalidGoogleKey         = fmt.Errorf("invalid Google key")
+	errInvalidEmail             = fmt.Errorf("invalid email address")
 	errInvalidJWT               = fmt.Errorf("invalid JSON Web Token")
+	errUnableToRegisterUser     = fmt.Errorf("unable to register user")
 	errUnableToUpdateGoogleKey  = fmt.Errorf("unable to update Google key")
 	errInvalidCommand           = fmt.Errorf("invalid command")
 	errDuplicateCommandName     = fmt.Errorf("duplicate command name")
@@ -25,15 +30,56 @@ var (
 	errUnableToSaveCommands     = fmt.Errorf("unable to save commands")
 )
 
+func (cfg *Config) RegisterUserHandler(r *http.Request) (rsp *Response) {
+	rsp = &Response{
+		Status:   http.StatusOK,
+		Template: "json",
+	}
+
+	user := struct {
+		Email string `json:"email"`
+		Key   string `json:"key"`
+	}{}
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Info.Println(err)
+		rsp.Status = http.StatusInternalServerError
+		return rsp
+	}
+
+	if user.Key != cfg.Key {
+		rsp.Error = errUnauthorized
+		return rsp
+	}
+
+	// not even sure if this is needed but I guess doesn't hurt
+	user.Email, err = url.QueryUnescape(user.Email)
+	if user.Email == "" || err != nil {
+		rsp.Error = errInvalidEmail
+		return rsp
+	}
+
+	if err := cfg.Backender.registerUser(context.Background(), user.Email); err != nil {
+		rsp.Error = errUnableToRegisterUser
+		return rsp
+	}
+
+	return
+}
+
 // UpdateGoogleKeyHandler updates a user's Google Sheets API Key
 func (cfg *Config) UpdateGoogleKeyHandler(r *http.Request) (rsp *Response) {
 	rsp = &Response{
-		status:   http.StatusOK,
-		template: "json",
+		Status:   http.StatusOK,
+		Template: "json",
 	}
 
 	// decode the JWT and make sure the signature is valid
-	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, jwt.MapClaims{}, func(*jwt.Token) (interface{}, error) {
+	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// a workaround for https://github.com/dgrijalva/jwt-go/issues/314
+		mapClaims := token.Claims.(jwt.MapClaims)
+		delete(mapClaims, "iat")
 		return []byte(cfg.JWTSecret), nil
 	})
 	if token == nil || err != nil { // this will also validate the signature and timestamp
@@ -86,8 +132,8 @@ func (cfg *Config) UpdateGoogleKeyHandler(r *http.Request) (rsp *Response) {
 // curl 'http://127.0.0.1:8000/get?google_key=my_key'
 func (cfg *Config) GetHandler(r *http.Request) (rsp *Response) {
 	rsp = &Response{
-		status:   http.StatusOK,
-		template: "json",
+		Status:   http.StatusOK,
+		Template: "json",
 	}
 
 	googleKey := r.FormValue("google_key")
@@ -108,32 +154,108 @@ func (cfg *Config) getCommands(googleKey string) (cmds commandFilterSlice, err e
 		return
 	}
 
-	var decryptedCommands []byte
-	decryptedCommands, err = cfg.Decrypt(encryptedCommands)
-	if err != nil {
-		return
-	}
+	if len(encryptedCommands) > 0 {
+		var decryptedCommands []byte
+		decryptedCommands, err = cfg.Decrypt(encryptedCommands)
+		if err != nil {
+			return
+		}
 
-	if err = json.Unmarshal(decryptedCommands, &cmds); err != nil {
-		err = errUnableToRetrieveCommands
-		return
+		if err = json.Unmarshal(decryptedCommands, &cmds); err != nil {
+			err = errUnableToRetrieveCommands
+			return
+		}
 	}
 
 	return
+}
+
+// RunSheetsHandler runs a single command (for Google Sheets)
+// curl -XPOST 'http://127.0.0.1:8000/sheets_run' -d '{"command_number":2, "params":["123"], "email":"me@example.com", "command":{"name":"my command","filter":{"type":"jmespath","filter":{"expression":""}},"command":{"type":"direct","command":{"method":"get","url":"https://example.com"}}},"key":"1234567"}'
+func (cfg *Config) RunSheetsHandler(r *http.Request) (rsp *Response) {
+	rsp = &Response{
+		Status:   http.StatusOK,
+		Template: "json",
+	}
+
+	uc := struct {
+		Email         string        `json:"email"`
+		CommandFilter commandFilter `json:"command"`
+		CommandNumber int           `json:"command_number"`
+		Params        []string      `json:"params"`
+		Key           string        `json:"key"`
+	}{}
+
+	rsp.Error = json.NewDecoder(r.Body).Decode(&uc)
+	if rsp.Error != nil {
+		log.Info.Println(rsp.Error)
+		rsp.Status = http.StatusInternalServerError
+		return rsp
+	}
+
+	if uc.Key != cfg.Key {
+		rsp.Error = errUnauthorized
+		return rsp
+	}
+
+	// not even sure if this is needed but I guess doesn't hurt
+	var err error
+	uc.Email, err = url.QueryUnescape(uc.Email)
+	if uc.Email == "" || err != nil {
+		rsp.Error = errInvalidEmail
+		return rsp
+	}
+
+	// Optional check user status
+	if cfg.UserFn != nil {
+		if rsp.Error = cfg.UserFn(uc.Email, uc.CommandNumber); rsp.Error != nil {
+			return rsp
+		}
+	}
+
+	if rsp.Error = uc.CommandFilter.Command.Valid(); rsp.Error != nil {
+		return rsp
+	}
+
+	if rsp.Error = uc.CommandFilter.Command.DeParameterize(uc.Params); rsp.Error != nil {
+		return rsp
+	}
+
+	var bdy []byte
+	bdy, rsp.Error = uc.CommandFilter.Command.Run()
+	if rsp.Error != nil {
+		rsp.Error = fmt.Errorf("%s:%q", rsp.Error, string(bdy))
+		return rsp
+	}
+
+	// filter the data
+	if rsp.Error = uc.CommandFilter.Filter.StripUnsafe(); rsp.Error != nil {
+		return rsp
+	}
+
+	var out interface{}
+	out, rsp.Error = uc.CommandFilter.Filter.Run(bdy)
+	if rsp.Error != nil {
+		rsp.Error = fmt.Errorf("%s:%q", rsp.Error, string(bdy))
+		return rsp
+	}
+
+	rsp.Response = out
+	return rsp
 }
 
 // RunHandler runs a single, named command
 // curl -XPOST 'http://127.0.0.1:8000/run' -d '{"google_key":"my_key", "command_name":"curl_command", "params":["1"]}'
 func (cfg *Config) RunHandler(r *http.Request) (rsp *Response) {
 	rsp = &Response{
-		status:   http.StatusOK,
-		template: "json",
+		Status:   http.StatusOK,
+		Template: "json",
 	}
 
 	var bdy []byte
 	bdy, rsp.Error = ioutil.ReadAll(r.Body)
 	if rsp.Error != nil {
-		rsp.status = http.StatusInternalServerError
+		rsp.Status = http.StatusInternalServerError
 		return rsp
 	}
 	defer r.Body.Close()
@@ -172,6 +294,8 @@ func (cfg *Config) RunHandler(r *http.Request) (rsp *Response) {
 			return rsp
 		}
 
+		cmd.Command.AddCredentials(user.Credentials)
+
 		bdy, rsp.Error = cmd.Command.Run()
 		if rsp.Error != nil {
 			rsp.Error = fmt.Errorf("%s:%q", rsp.Error, string(bdy))
@@ -200,14 +324,14 @@ func (cfg *Config) RunHandler(r *http.Request) (rsp *Response) {
 // curl -XPOST 'http://127.0.0.1:8000/save' -d '{"google_key":"my_key","commands":[{"name":"api_command","command":{"type":"direct","command":{"method":"get","url":"https://api.chucknorris.io/jokes/random", "headers":[{"key":"User-Agent","value":"Data Connector"}]}},"filter":{"type":"jmespath","filter":{"expression":"[[value]]"}}}]}'
 func (cfg *Config) SaveHandler(r *http.Request) (rsp *Response) {
 	rsp = &Response{
-		status:   http.StatusOK,
-		template: "json",
+		Status:   http.StatusOK,
+		Template: "json",
 	}
 
 	var bdy []byte
 	bdy, rsp.Error = ioutil.ReadAll(r.Body)
 	if rsp.Error != nil {
-		rsp.status = http.StatusInternalServerError
+		rsp.Status = http.StatusInternalServerError
 		return rsp
 	}
 	defer r.Body.Close()

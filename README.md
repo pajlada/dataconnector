@@ -31,7 +31,7 @@ The easiest way to run the Data Connector Add-on is to install it from the Googl
 
 * Set your environment variables:
 
-  **IMPORTANT**: The `JWT_SECRET` **MUST** be the same as the `JWT_SECRET` environment variable set below in the `Google Sheets` section.
+  **IMPORTANT**: The `KEY` **MUST** be the same as the `KEY` environment variable set below in the `Google Sheets` section.
 
   ```
   export DATACONNECTOR_POSTGRESQL_USER=user
@@ -39,7 +39,7 @@ The easiest way to run the Data Connector Add-on is to install it from the Googl
   export DATACONNECTOR_POSTGRESQL_HOST=localhost
   export DATACONNECTOR_POSTGRESQL_DATABASE=mydatabase
   export DATACONNECTOR_POSTGRESQL_PORT=5432
-  export DATACONNECTOR_JWT_SECRET=secret
+  export DATACONNECTOR_KEY=my-key
   ```
 
 * `cd backend/backend/cmd`
@@ -73,15 +73,26 @@ The easiest way to run the Data Connector Add-on is to install it from the Googl
   ```
   function updateEnvVariables(){
     PropertiesService.getScriptProperties().setProperty('DOMAIN', 'https://api.example.com');
-    PropertiesService.getScriptProperties().setProperty('JWT_SECRET', 'secret');
+    PropertiesService.getScriptProperties().setProperty('KEY',"my-key");
+
+    // OAuth2 Creds
+    //// Facebook Ads Manager API
+    PropertiesService.getScriptProperties().setProperty('FACEBOOK_ADS_MANAGER_CLIENT_ID', 'my-facebook-ads-manager-app-id');
+    PropertiesService.getScriptProperties().setProperty('FACEBOOK_ADS_MANAGER_CLIENT_SECRET', 'my-facebook-ads-manager-client-secret');
+    //// GitHub API
+    PropertiesService.getScriptProperties().setProperty('GITHUB_CLIENT_ID', 'my-github-client-id');
+    PropertiesService.getScriptProperties().setProperty('GITHUB_CLIENT_SECRET', 'my-github-client-secret');
+    //// Google Analytics Reporting API
+    PropertiesService.getScriptProperties().setProperty('GOOGLE_ANALYTICS_REPORTING_CLIENT_ID', 'my-google-analytics-client-id.apps.googleusercontent.com');
+    PropertiesService.getScriptProperties().setProperty('GOOGLE_ANALYTICS_REPORTING_SECRET', 'my-google-analytics-client-secret');
   }
   ```
 
-  Update the `DOMAIN` and `JWT_SECRET`, select the `updateEnvVariables` in the functions dropdown list and hit the play button.
-  
-  **IMPORTANT**: The `JWT_SECRET` **MUST** be the same as the `JWT_SECRET` environment variable set above in the `Backend` section.
+  **IMPORTANT**: The `KEY` **MUST** be the same as the `KEY` environment variable set above in the `Backend` section.
 
-  Once that's complete, you can delete the `env.gs` file
+  Update the `DOMAIN` and `KEY`, select the `updateEnvVariables` in the functions dropdown list and hit the play button.
+
+  Once that's complete, you can delete the `env.gs` file.
 
 * To make changes to the Add-on, enable hot reloading:
 
